@@ -3,18 +3,35 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-  <modelVersion>4.0.0</modelVersion>
+  <!--<modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.springframework.data.build</groupId>
     <artifactId>spring-data-parent</artifactId>
     <version>1.9.5.RELEASE</version>
-  </parent>
+  </parent>-->
 
-  <groupId>com.ifrabbit</groupId>
+
+
+<modelVersion>4.0.0</modelVersion>
+    <groupId>com.minlia.cloud.thirdparty</groupId>
+    <artifactId>spring-data-batis</artifactId>
+    <version>1.0.0.RELEASE</version>
+    <packaging>jar</packaging>
+    <name>Minlia Thirdparty Spring Data Batis</name>
+
+    <parent>
+        <groupId>com.minlia.cloud</groupId>
+        <artifactId>minlia-cloud-parent</artifactId>
+        <version>1.0.0.RELEASE</version>
+        <relativePath/>
+    </parent>
+
+
+
+  <!--<groupId>com.ifrabbit</groupId>
   <artifactId>spring-data-mybatis</artifactId>
-  <version>1.0.17.RELEASE</version>
+  <version>1.0.17.RELEASE</version>-->
 
-  <name>Spring Data MyBatis</name>
   <description>The primary goal of the Spring Data project is to make it easier to build
     Spring-powered applications
     that use data access technologies. This module deals with enhanced support for MyBatis based
@@ -165,21 +182,46 @@
       <version>9.4.1212</version>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.hibernate.javax.persistence</groupId>
+      <artifactId>hibernate-jpa-2.1-api</artifactId>
+      <version>1.0.0.Final</version>
+    </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>compile</scope>
+        </dependency>
+    
+
+
   </dependencies>
   <build>
     <plugins>
-      <plugin>
+      <!--<plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>wagon-maven-plugin</artifactId>
-      </plugin>
-      <plugin>
+      </plugin>-->
+ <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+
+
+            <plugin>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-maven-plugin</artifactId>
+            </plugin>
+
+      <!--<plugin>
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctor-maven-plugin</artifactId>
-      </plugin>
+      </plugin>-->
     </plugins>
   </build>
   <repositories>

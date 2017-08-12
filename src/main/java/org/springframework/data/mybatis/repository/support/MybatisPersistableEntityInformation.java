@@ -52,4 +52,14 @@ public class MybatisPersistableEntityInformation<T extends Persistable<ID>, ID e
     public ID getId(T entity) {
         return entity.getId();
     }
+
+//    @Override
+//    public void prePersist(T entity) {
+//        entity.prePersist();
+//    }
+
+//    @Override
+//    public void preUpdate(T entity) {
+//        entity.preUpdate();
+//    }
 }

@@ -44,11 +44,11 @@ import static org.springframework.data.querydsl.QueryDslUtils.QUERY_DSL_PRESENT;
  */
 public class MybatisRepositoryFactory extends RepositoryFactorySupport {
 
-    private final SqlSessionTemplate    sessionTemplate;
-    private final Dialect               dialect;
+    private final SqlSessionTemplate sessionTemplate;
+    private final Dialect dialect;
     private final MybatisMappingContext mappingContext;
-    private final AuditorAware<?>       auditorAware;
-    private final AuditDateAware<?>     auditDateAware;
+    private final AuditorAware<?> auditorAware;
+    private final AuditDateAware<?> auditDateAware;
 
     public MybatisRepositoryFactory(final MybatisMappingContext mappingContext,
                                     final SqlSessionTemplate sessionTemplate,
@@ -74,10 +74,9 @@ public class MybatisRepositoryFactory extends RepositoryFactorySupport {
     @Override
     protected Object getTargetRepository(RepositoryInformation information) {
 
-        // generate Mapper statements.
+        //To generate Mapper statements.
         new MybatisSimpleRepositoryMapperGenerator(sessionTemplate.getConfiguration(), dialect, mappingContext, information.getDomainType())
                 .generate();
-
 
         return getTargetRepositoryViaReflection(information,
                 getEntityInformation(information.getDomainType()),

@@ -25,7 +25,6 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.annotation.Persistent;
-import org.springframework.data.mybatis.annotations.Entity;
 import org.springframework.data.mybatis.mapping.MybatisMappingContext;
 import org.springframework.data.mybatis.repository.dialect.DialectFactoryBean;
 import org.springframework.data.mybatis.repository.support.MybatisRepository;
@@ -39,6 +38,7 @@ import org.springframework.data.repository.core.support.AbstractRepositoryMetada
 import org.springframework.data.repository.util.TxUtils;
 import org.springframework.util.StringUtils;
 
+import javax.persistence.Entity;
 import java.lang.annotation.Annotation;
 import java.util.*;
 
@@ -48,14 +48,13 @@ import java.util.*;
  * @author Jarvis Song
  */
 public class MybatisRepositoryConfigExtension extends RepositoryConfigurationExtensionSupport {
+    public static final String MAPPING_CONTEXT_SUFFIX = "_MappingContext";
     private static final String DEFAULT_TRANSACTION_MANAGER_BEAN_NAME = TxUtils.DEFAULT_TRANSACTION_MANAGER;
     private static final String DEFAULT_SQL_SESSION_FACTORY_BEAN_NAME = "sqlSessionFactory";
-    private static final String DEFAULT_AUDITOR_AWARE_BEAN_NAME       = "auditorAware";
+    private static final String DEFAULT_AUDITOR_AWARE_BEAN_NAME = "auditorAware";
     private static final String ENABLE_DEFAULT_TRANSACTIONS_ATTRIBUTE = "enableDefaultTransactions";
     private static final String SQL_SESSION_TEMPLATE_BEAN_NAME_SUFFIX = "_Template";
-    private static final String DIALECT_BEAN_NAME_SUFFIX              = "_Dialect";
-    public static final  String MAPPING_CONTEXT_SUFFIX                = "_MappingContext";
-
+    private static final String DIALECT_BEAN_NAME_SUFFIX = "_Dialect";
     private final ResourceLoader resourceLoader;
 
     public MybatisRepositoryConfigExtension(ResourceLoader resourceLoader) {

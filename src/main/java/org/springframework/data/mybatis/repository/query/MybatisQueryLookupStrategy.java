@@ -18,6 +18,7 @@
 
 package org.springframework.data.mybatis.repository.query;
 
+import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.data.mybatis.mapping.MybatisMappingContext;
 import org.springframework.data.mybatis.repository.dialect.Dialect;
@@ -37,90 +38,10 @@ import java.lang.reflect.Method;
  *
  * @author Jarvis Song
  */
+@Slf4j
 public final class MybatisQueryLookupStrategy {
 
     private MybatisQueryLookupStrategy() {
-    }
-
-    private abstract static class AbstractQueryLookupStrategy implements QueryLookupStrategy {
-
-        @Override
-        public RepositoryQuery resolveQuery(Method method, RepositoryMetadata metadata, ProjectionFactory factory, NamedQueries namedQueries) {
-
-            return resolveQuery(new MybatisQueryMethod(method, metadata, factory), namedQueries);
-        }
-
-        protected abstract RepositoryQuery resolveQuery(MybatisQueryMethod method, NamedQueries namedQueries);
-    }
-
-    private static class CreateQueryLookupStrategy extends AbstractQueryLookupStrategy {
-
-        private final MybatisMappingContext context;
-        private final SqlSessionTemplate    sqlSessionTemplate;
-        private final Dialect               dialect;
-
-        public CreateQueryLookupStrategy(MybatisMappingContext context, SqlSessionTemplate sqlSessionTemplate, Dialect dialect) {
-            this.context = context;
-            this.sqlSessionTemplate = sqlSessionTemplate;
-            this.dialect = dialect;
-        }
-
-        @Override
-        protected RepositoryQuery resolveQuery(MybatisQueryMethod method, NamedQueries namedQueries) {
-            try {
-                return new PartTreeMybatisQuery(context, sqlSessionTemplate, dialect, method);
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException(
-                        String.format("Could not create query metamodel for method %s!", method.toString()), e);
-            }
-        }
-    }
-
-    private static class DeclaredQueryLookupStrategy extends AbstractQueryLookupStrategy {
-        private final SqlSessionTemplate        sqlSessionTemplate;
-        private final EvaluationContextProvider evaluationContextProvider;
-
-        private DeclaredQueryLookupStrategy(SqlSessionTemplate sqlSessionTemplate, EvaluationContextProvider evaluationContextProvider) {
-            this.sqlSessionTemplate = sqlSessionTemplate;
-            this.evaluationContextProvider = evaluationContextProvider;
-        }
-
-        @Override
-        protected RepositoryQuery resolveQuery(MybatisQueryMethod method, NamedQueries namedQueries) {
-
-            RepositoryQuery query = MybatisQueryFactory.INSTANCE.fromQueryAnnotation(sqlSessionTemplate, method, evaluationContextProvider);
-            if (null != query) {
-                return query;
-            }
-//            String name = method.getNamedQueryName();
-//            if (namedQueries.hasQuery(name)) {
-//                return MybatisQueryFactory.INSTANCE.fromMethodWithQueryString(sqlSessionTemplate, method, namedQueries.getQuery(name), evaluationContextProvider);
-//            }
-            throw new IllegalStateException(
-                    String.format("Did neither find a NamedQuery nor an annotated query for method %s!", method));
-        }
-    }
-
-    private static class CreateIfNotFoundQueryLookupStrategy extends AbstractQueryLookupStrategy {
-        private final DeclaredQueryLookupStrategy lookupStrategy;
-        private final CreateQueryLookupStrategy   createStrategy;
-
-        private CreateIfNotFoundQueryLookupStrategy(
-                CreateQueryLookupStrategy createStrategy,
-                DeclaredQueryLookupStrategy lookupStrategy) {
-            this.lookupStrategy = lookupStrategy;
-            this.createStrategy = createStrategy;
-        }
-
-        @Override
-        protected RepositoryQuery resolveQuery(MybatisQueryMethod method, NamedQueries namedQueries) {
-            try {
-                return lookupStrategy.resolveQuery(method, namedQueries);
-            } catch (IllegalStateException e) {
-                return createStrategy.resolveQuery(method, namedQueries);
-            }
-
-        }
     }
 
     public static QueryLookupStrategy create(
@@ -141,6 +62,90 @@ public final class MybatisQueryLookupStrategy {
                         new DeclaredQueryLookupStrategy(sqlSessionTemplate, evaluationContextProvider));
             default:
                 throw new IllegalArgumentException(String.format("Unsupported query lookup strategy %s!", key));
+        }
+    }
+
+    private abstract static class AbstractQueryLookupStrategy implements QueryLookupStrategy {
+
+        @Override
+        public RepositoryQuery resolveQuery(Method method, RepositoryMetadata metadata, ProjectionFactory factory, NamedQueries namedQueries) {
+
+            return resolveQuery(new MybatisQueryMethod(method, metadata, factory), namedQueries);
+        }
+
+        protected abstract RepositoryQuery resolveQuery(MybatisQueryMethod method, NamedQueries namedQueries);
+    }
+
+    private static class CreateQueryLookupStrategy extends AbstractQueryLookupStrategy {
+
+        private final MybatisMappingContext context;
+        private final SqlSessionTemplate sqlSessionTemplate;
+        private final Dialect dialect;
+
+        public CreateQueryLookupStrategy(MybatisMappingContext context, SqlSessionTemplate sqlSessionTemplate, Dialect dialect) {
+            this.context = context;
+            this.sqlSessionTemplate = sqlSessionTemplate;
+            this.dialect = dialect;
+        }
+
+        @Override
+        protected RepositoryQuery resolveQuery(MybatisQueryMethod method, NamedQueries namedQueries) {
+            try {
+                return new PartTreeMybatisQuery(context, sqlSessionTemplate, dialect, method);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException(
+                        String.format("Could not create query metamodel for method %s!", method.toString()), e);
+            }
+        }
+    }
+
+    private static class DeclaredQueryLookupStrategy extends AbstractQueryLookupStrategy {
+        private final SqlSessionTemplate sqlSessionTemplate;
+        private final EvaluationContextProvider evaluationContextProvider;
+
+        private DeclaredQueryLookupStrategy(SqlSessionTemplate sqlSessionTemplate, EvaluationContextProvider evaluationContextProvider) {
+            this.sqlSessionTemplate = sqlSessionTemplate;
+            this.evaluationContextProvider = evaluationContextProvider;
+        }
+
+        @Override
+        protected RepositoryQuery resolveQuery(MybatisQueryMethod method, NamedQueries namedQueries) {
+
+            RepositoryQuery query = MybatisQueryFactory.INSTANCE.fromQueryAnnotation(sqlSessionTemplate, method, evaluationContextProvider);
+            if (null != query) {
+                return query;
+            }
+
+//            String name = method.getNamedQueryName();
+//            if (namedQueries.hasQuery(name)) {
+//                log.debug("name {}",name);
+////                return MybatisQueryFactory.INSTANCE.fromMethodWithQueryString(sqlSessionTemplate, method,  namedQueries.getQuery(name), evaluationContextProvider);
+//                return null;
+//            }
+            throw new IllegalStateException(
+                    String.format("Did neither find a NamedQuery nor an annotated query for method %s!", method));
+        }
+    }
+
+    private static class CreateIfNotFoundQueryLookupStrategy extends AbstractQueryLookupStrategy {
+        private final DeclaredQueryLookupStrategy lookupStrategy;
+        private final CreateQueryLookupStrategy createStrategy;
+
+        private CreateIfNotFoundQueryLookupStrategy(
+                CreateQueryLookupStrategy createStrategy,
+                DeclaredQueryLookupStrategy lookupStrategy) {
+            this.lookupStrategy = lookupStrategy;
+            this.createStrategy = createStrategy;
+        }
+
+        @Override
+        protected RepositoryQuery resolveQuery(MybatisQueryMethod method, NamedQueries namedQueries) {
+            try {
+                return lookupStrategy.resolveQuery(method, namedQueries);
+            } catch (IllegalStateException e) {
+                return createStrategy.resolveQuery(method, namedQueries);
+            }
+
         }
     }
 }

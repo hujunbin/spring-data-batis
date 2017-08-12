@@ -21,7 +21,9 @@ package org.springframework.data.mybatis.mapping;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandler;
 import org.springframework.data.mapping.PersistentProperty;
-import org.springframework.data.mybatis.annotations.Id.GenerationType;
+
+import javax.persistence.GenerationType;
+//import org.springframework.data.mybatis.annotations.Id.GenerationType;
 
 /**
  * @author Jarvis Song
@@ -31,6 +33,10 @@ public interface MybatisPersistentProperty extends PersistentProperty<MybatisPer
     JdbcType getJdbcType();
 
     String getColumnName();
+
+    boolean insertable();
+
+    boolean updatable();
 
     boolean isToOneAssociation();
 

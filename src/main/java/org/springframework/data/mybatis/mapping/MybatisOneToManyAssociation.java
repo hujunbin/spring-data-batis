@@ -1,8 +1,10 @@
 package org.springframework.data.mybatis.mapping;
 
-import org.springframework.data.mybatis.annotations.JoinColumn;
-import org.springframework.data.mybatis.annotations.JoinTable;
 import org.springframework.util.StringUtils;
+
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+
 
 /**
  * @author Jarvis Song
@@ -10,7 +12,7 @@ import org.springframework.util.StringUtils;
 public class MybatisOneToManyAssociation extends MybatisAssociation {
 
     protected JoinColumn joinColumn;
-    protected JoinTable  joinTable;
+    protected JoinTable joinTable;
 
     public MybatisOneToManyAssociation(MybatisPersistentProperty inverse, MybatisPersistentProperty obverse) {
         super(inverse, obverse);

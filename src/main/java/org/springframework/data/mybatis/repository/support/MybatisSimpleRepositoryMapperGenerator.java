@@ -18,13 +18,14 @@
 
 package org.springframework.data.mybatis.repository.support;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.session.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.mapping.*;
 import org.springframework.data.mapping.model.MappingException;
-import org.springframework.data.mybatis.annotations.*;
+import org.springframework.data.mybatis.annotations.Condition;
+import org.springframework.data.mybatis.annotations.Conditions;
+import org.springframework.data.mybatis.annotations.DynamicSearch;
 import org.springframework.data.mybatis.mapping.*;
 import org.springframework.data.mybatis.repository.dialect.Dialect;
 import org.springframework.data.mybatis.repository.dialect.identity.IdentityColumnSupport;
@@ -40,15 +41,18 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.springframework.data.mybatis.annotations.Id.GenerationType.*;
+import static javax.persistence.GenerationType.*;
+
+//import static org.springframework.data.mybatis.annotations.Id.GenerationType.*;
 
 /**
  * generate basic mapper for simple repository automatic.
  *
  * @author Jarvis Song
  */
+@Slf4j
 public class MybatisSimpleRepositoryMapperGenerator {
-    private transient static final Logger logger = LoggerFactory.getLogger(MybatisSimpleRepositoryMapperGenerator.class);
+//    private transient static final Logger log = LoggerFactory.getLogger(MybatisSimpleRepositoryMapperGenerator.class);
     private static final String MAPPER_BEGIN = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
             "<!DOCTYPE mapper PUBLIC \"-//mybatis.org//DTD Mapper 3.0//EN\" \"http://mybatis.org/dtd/mybatis-3-mapper.dtd\">";
     private static final String MAPPER_END = "</mapper>";
@@ -73,7 +77,7 @@ public class MybatisSimpleRepositoryMapperGenerator {
 
     public void generate() {
         if (null == persistentEntity) {
-            logger.warn("Could not find persistent entity for domain: " + domainClass + " from mapping context.");
+            log.warn("Could not find persistent entity for domain: " + domainClass + " from mapping context.");
             return;
         }
         String xml;
@@ -83,8 +87,8 @@ public class MybatisSimpleRepositoryMapperGenerator {
         } catch (IOException e) {
             throw new MappingException("create auto mapping error for " + namespace, e);
         }
-        if (logger.isDebugEnabled()) {
-            logger.debug("\n******************* Auto Generate MyBatis Mapping XML (" + namespace + ") *******************\n" + xml);
+        if (log.isDebugEnabled()) {
+            log.debug("\n******************* Auto Generate MyBatis Mapping XML (" + namespace + ") *******************\n" + xml);
         }
         InputStream inputStream = null;
         try {
@@ -102,7 +106,7 @@ public class MybatisSimpleRepositoryMapperGenerator {
             try {
                 inputStream.close();
             } catch (IOException e) {
-                logger.error(e.getMessage(), e);
+                log.error(e.getMessage(), e);
             }
         }
     }
@@ -176,7 +180,7 @@ public class MybatisSimpleRepositoryMapperGenerator {
         builder.append(MAPPER_END);
         String result = builder.toString();
 
-
+        System.out.println(result);
         return result;
     }
 
@@ -201,6 +205,7 @@ public class MybatisSimpleRepositoryMapperGenerator {
                     builder.append(dialect.wrapColumnName(property.getColumnName())).append("=").append(dialect.wrapColumnName(property.getColumnName())).append("+1,");
                     return;
                 }
+                if (!property.updatable()) return;
                 if (ignoreNull) {
                     builder.append("<if test=\"" + property.getName() + " != null\">");
                 }
@@ -240,6 +245,7 @@ public class MybatisSimpleRepositoryMapperGenerator {
 
                 if ((ass instanceof MybatisManyToOneAssociation)) {
                     MybatisManyToOneAssociation association = (MybatisManyToOneAssociation) ass;
+                    if (!association.updatable()) return;
                     if (ignoreNull) {
                         builder.append("<if test=\"" + association.getInverse().getName() + " != null and " + association.getInverse().getName() + "." + association.getObverse().getName() + " != null\">");
                     }
@@ -278,7 +284,7 @@ public class MybatisSimpleRepositoryMapperGenerator {
 
         MybatisPersistentProperty versionProperty = persistentEntity.getVersionProperty();
         if (null != versionProperty) {
-            builder.append("and ").append(dialect.wrapColumnName(versionProperty.getColumnName())).append("=").append("#{").append(versionProperty.getName()).append("}");
+            builder.append(" and ").append(dialect.wrapColumnName(versionProperty.getColumnName())).append("=").append("#{").append(versionProperty.getName()).append("}");
         }
 
         builder.append("</trim>");
@@ -456,9 +462,13 @@ public class MybatisSimpleRepositoryMapperGenerator {
 
     private String buildCondition() {
         final StringBuilder builder = new StringBuilder();
+        if (persistentEntity.findAnnotation(DynamicSearch.class) != null) {
+            builder.append(" ${_sqlConditionDsf} ");
+        }
         persistentEntity.doWithProperties(new PropertyHandler<MybatisPersistentProperty>() {
             @Override
             public void doWithPersistentProperty(MybatisPersistentProperty property) {
+
                 Set<Condition> conditions = new HashSet<Condition>();
                 Condition cond = property.findAnnotation(Condition.class);
                 if (null != cond) {
@@ -675,6 +685,7 @@ public class MybatisSimpleRepositoryMapperGenerator {
                         return;
                     }
                 }
+                if (!property.insertable()) return;
                 builder.append(dialect.wrapColumnName(property.getColumnName())).append(",");
             }
         });
@@ -700,6 +711,7 @@ public class MybatisSimpleRepositoryMapperGenerator {
 
                 if ((ass instanceof MybatisManyToOneAssociation)) {
                     MybatisManyToOneAssociation association = (MybatisManyToOneAssociation) ass;
+                    if (!association.insertable()) return;
                     builder.append(dialect.wrapColumnName(association.getJoinColumnName())).append(",");
                     return;
                 }
@@ -731,6 +743,7 @@ public class MybatisSimpleRepositoryMapperGenerator {
                         }
                         return;
                     }
+                    if (!property.insertable()) return;
                     IdentityColumnSupport identityColumnSupport = dialect.getIdentityColumnSupport();
                     if (property.getIdGenerationType() == IDENTITY || (property.getIdGenerationType() == AUTO && identityColumnSupport.supportsIdentityColumns())) {
                         return;
@@ -763,6 +776,7 @@ public class MybatisSimpleRepositoryMapperGenerator {
                 }
                 if ((ass instanceof MybatisManyToOneAssociation)) {
                     MybatisManyToOneAssociation association = (MybatisManyToOneAssociation) ass;
+                    if (!association.insertable()) return;
                     builder.append("#{").append(association.getInverse().getName()).append(".").append(association.getObverse().getName()).append(",jdbcType=").append(association.getObverse().getJdbcType()).append("},");
                     return;
                 }
@@ -776,6 +790,8 @@ public class MybatisSimpleRepositoryMapperGenerator {
         builder.append(")]]>");
 
         builder.append("</insert>");
+
+
     }
 
 

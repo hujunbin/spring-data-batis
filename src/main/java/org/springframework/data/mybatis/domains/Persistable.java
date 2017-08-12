@@ -16,38 +16,21 @@
 // *
 // */
 //
-//package org.springframework.data.mybatis.annotations;
+//package org.springframework.data.mybatis.domains;
 //
-//import java.lang.annotation.ElementType;
-//import java.lang.annotation.Retention;
-//import java.lang.annotation.RetentionPolicy;
-//import java.lang.annotation.Target;
+//import java.io.Serializable;
 //
 ///**
 // * @author Jarvis Song
 // */
-//@Target({ElementType.METHOD, ElementType.FIELD})
-//@Retention(RetentionPolicy.RUNTIME)
-//public @interface Temporal {
+//public interface Persistable<ID extends Serializable> extends Serializable {
 //
+//    void preInsert();
 //
-//    TemporalType value();
+//    void preUpdate();
 //
-//    enum TemporalType {
+//    ID getId();
 //
-//        /**
-//         * Map as <code>java.sql.Date</code>
-//         */
-//        DATE,
+//    boolean isNew();
 //
-//        /**
-//         * Map as <code>java.sql.Time</code>
-//         */
-//        TIME,
-//
-//        /**
-//         * Map as <code>java.sql.Timestamp</code>
-//         */
-//        TIMESTAMP
-//    }
 //}

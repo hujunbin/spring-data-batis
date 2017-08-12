@@ -18,23 +18,25 @@
 
 package org.springframework.data.mybatis.mapping;
 
+import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.TypeHandler;
 import org.springframework.data.mapping.Association;
 import org.springframework.data.mapping.PersistentEntity;
 import org.springframework.data.mapping.model.AnnotationBasedPersistentProperty;
 import org.springframework.data.mapping.model.SimpleTypeHolder;
-import org.springframework.data.mybatis.annotations.*;
-import org.springframework.data.mybatis.annotations.Id.GenerationType;
 import org.springframework.data.util.ParsingUtils;
 import org.springframework.util.StringUtils;
-import org.apache.ibatis.type.JdbcType;
 
+import javax.persistence.*;
 import java.beans.PropertyDescriptor;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.ibatis.type.JdbcType.*;
+
+//import org.springframework.data.mybatis.annotations.*;
+//import org.springframework.data.mybatis.annotations.Id.GenerationType;
 
 /**
  * @author Jarvis Song
@@ -66,7 +68,43 @@ class MybatisPersistentPropertyImpl extends AnnotationBasedPersistentProperty<My
         javaTypesMappedToJdbcTypes.put(Float.class, REAL);
         javaTypesMappedToJdbcTypes.put(Double.class, DOUBLE);
 
+    }
 
+
+    /**
+     * Inspired from jpa persistent property impl
+     */
+    private static final Collection<Class<? extends Annotation>> ID_ANNOTATIONS;
+    private static final Collection<Class<? extends Annotation>> ASSOCIATION_ANNOTATIONS;
+
+    static {
+
+        Set<Class<? extends Annotation>> annotations = new HashSet<Class<? extends Annotation>>();
+        annotations.add(Id.class);
+        annotations.add(EmbeddedId.class);
+        ID_ANNOTATIONS = Collections.unmodifiableSet(annotations);
+
+
+        annotations = new HashSet<Class<? extends Annotation>>();
+        annotations.add(OneToMany.class);
+        annotations.add(OneToOne.class);
+        annotations.add(ManyToMany.class);
+        annotations.add(ManyToOne.class);
+        annotations.add(Embedded.class);
+
+        ASSOCIATION_ANNOTATIONS = Collections.unmodifiableSet(annotations);
+
+    }
+
+
+    @Override
+    public boolean isIdProperty() {
+        for (Class<? extends Annotation> annotation : ID_ANNOTATIONS) {
+            if (isAnnotationPresent(annotation)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -155,9 +193,28 @@ class MybatisPersistentPropertyImpl extends AnnotationBasedPersistentProperty<My
         JdbcType t = javaTypesMappedToJdbcTypes.get(type);
         if (null != t) {
             return t;
+        } else {
+            System.out.println("FUCK");
         }
 
         return UNDEFINED;
+    }
+
+
+    @Override
+    public boolean isAssociation() {
+
+        for (Class<? extends Annotation> annotationType : ASSOCIATION_ANNOTATIONS) {
+            if (findAnnotation(annotationType) != null) {
+                return true;
+            }
+        }
+
+        if (getType().isAnnotationPresent(Embeddable.class)) {
+            return true;
+        }
+
+        return false;
     }
 
     @Override
@@ -169,6 +226,25 @@ class MybatisPersistentPropertyImpl extends AnnotationBasedPersistentProperty<My
         }
 
         return ParsingUtils.reconcatenateCamelCase(getName(), "_");
+    }
+
+
+    @Override
+    public boolean insertable() {
+        Column column = findAnnotation(Column.class);
+        if (null != column) {
+            return column.insertable();
+        }
+        return true;
+    }
+
+    @Override
+    public boolean updatable() {
+        Column column = findAnnotation(Column.class);
+        if (null != column) {
+            return column.updatable();
+        }
+        return true;
     }
 
     @Override
@@ -189,11 +265,11 @@ class MybatisPersistentPropertyImpl extends AnnotationBasedPersistentProperty<My
         if (!isIdProperty()) {
             return null;
         }
-        Id id = findAnnotation(Id.class);
-        if (null == id) {
+        GeneratedValue generatedValue = findAnnotation(GeneratedValue.class);
+        if (null == generatedValue) {
             return null;
         }
-        return id.strategy();
+        return generatedValue.strategy();
     }
 
     @Override
@@ -204,4 +280,24 @@ class MybatisPersistentPropertyImpl extends AnnotationBasedPersistentProperty<My
         }
         return null;
     }
+
+
+//    @Override
+//    public String toString() {
+//
+//        if (annotationCache.isEmpty()) {
+//            populateAnnotationCache(field);
+//        }
+//
+//        StringBuilder builder = new StringBuilder();
+//
+//        for (Annotation annotation : annotationCache.values()) {
+//            if (annotation != null) {
+//                builder.append(annotation.toString()).append(" ");
+//            }
+//        }
+//
+//        return builder.toString() + super.toString();
+//    }
+
 }
